@@ -3,14 +3,17 @@ import TextInput from "./components/TextInput";
 import QRCanvas from "./components/QRCanvas";
 import QRActions from "./components/QRActions";
 import ProgressBar from "./components/ProgressBar";
+import QRScanner from "./components/QRScanner";
 import './App.css'
 
 function App() {
+  const [scannedText, setScannedText] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
   const [progress, setProgress] = useState(0);
   const [inputText, setInputText] = useState("");
   const [generatedText, setGeneratedText] = useState(null);
   const canvasRef = useRef(null);
+  const [isScanning, setIsScanning] = useState(false);
   const handleGenerate = () => {
   if (!inputText.trim()) return;
 
@@ -38,6 +41,31 @@ function App() {
   }, [isGenerating, inputText]);
 
   return (
+
+  <>
+    {isScanning && (
+      <div className="scanner-container">
+      <QRScanner
+        onScan={(text) => {
+          setScannedText(text);
+          setIsScanning(false); 
+        }}
+      />
+      </div>
+    )}
+    <button
+      onClick={() => {
+        setScannedText("");
+        setIsScanning((prev) => !prev);
+      }}
+    >
+      {isScanning ? "Stop Scan" : "Start Scan"}
+    </button>
+    {scannedText && (
+      <div className="scan-result">
+        Scanned: {scannedText}
+      </div>
+    )}
     <div className="container">
       <div className="left">
         <TextInput value={inputText} onChange={setInputText} onGenerate={handleGenerate} disabled={isGenerating} />
@@ -68,6 +96,7 @@ function App() {
 
       </div>
     </div>
+  </>
   );
 }
 

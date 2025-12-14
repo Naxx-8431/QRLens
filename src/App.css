@@ -77,3 +77,15 @@ canvas {
   background: #00000091;
   transition: width 0.1s linear;
 }
+
+.scanner-container {
+  width: clamp(200px, 70vw, 500px);
+  aspect-ratio: 1 / 1;
+  margin: clamp(0px, 2vw, 20px) auto;
+}
+
+@media (max-width: 600px) {
+  .scanner-container {
+    margin: 0;
+  }
+}
