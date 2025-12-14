@@ -1,6 +1,6 @@
 import { useState } from "react";
-import TextInput from "./TextInput";
-import QRCanvas from "./QRCanvas";
+import TextInput from "./components/TextInput";
+import QRCanvas from "./components/QRCanvas";
 import './App.css'
 
 function App() {
@@ -28,7 +28,7 @@ function App() {
           {generatedText && (
             <QRCanvas text={generatedText} />
           )}
-          
+
         </div>
       </div>
     </div>
