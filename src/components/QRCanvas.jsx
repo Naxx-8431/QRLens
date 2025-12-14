@@ -1,9 +1,8 @@
-import { useEffect, useRef } from "react";
+import { useEffect } from "react";
 import QRCode from "qrcode";
 
-function QRCanvas({ text }) {
+function QRCanvas({ text, canvasRef }) {
   const size = 300;
-  const canvasRef = useRef(null);
 
   useEffect(() => {
     if (!canvasRef.current) return;

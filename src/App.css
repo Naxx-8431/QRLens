@@ -15,19 +15,24 @@ body {
   width: 300px;
 }
 
+.right {
+  width: 300px;
+}
+
 textarea {
   width: 97%;
-  min-height: 250px;
-  resize: vertical;
-  background: #333;
-  color: #f1f1f1;
-  border: none;
+  resize: none;
+  overflow-y: auto;
+  min-height: 295px;
+  background: #ffffff74;
+  color: #272727;
+  border: 1px solid rgba(128, 128, 128, 0.44);
   border-radius: 8px;
 }
 
 .gen-button {
   width: 100%;
-  margin-top: 4px;
+  margin-top: 2px;
 }
 
 canvas {
@@ -44,4 +49,17 @@ canvas {
 .placeholder {
   text-align: center;
   opacity: 0.6;
+}
+
+.qr-actions {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  flex-direction: row;
+  gap: 5px;
+}
+
+.action-button {
+  width: 100%;
+  margin-top: 4px;
 }
