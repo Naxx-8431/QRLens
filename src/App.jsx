@@ -42,25 +42,35 @@ function App() {
 
   return (
 
-  <>
-    {isScanning && (
-      <div className="scanner-container">
-      <QRScanner
-        onScan={(text) => {
-          setScannedText(text);
-          setIsScanning(false); 
-        }}
-      />
+  <div className="app-layout">
+
+    <div className="scanner-section">
+      <div
+        className={`scanner-container ${
+          isScanning ? "" : "scanner-hidden"
+        }`}
+      >
+        <QRScanner
+          isScanning={isScanning}
+          onScan={(text) => {
+            setScannedText(text);
+            setIsScanning(false);
+          }}
+        />
       </div>
-    )}
-    <button
-      onClick={() => {
-        setScannedText("");
-        setIsScanning((prev) => !prev);
-      }}
-    >
-      {isScanning ? "Stop Scan" : "Start Scan"}
-    </button>
+
+      <button
+        className="scanner-btn"
+        onClick={() => {
+          setScannedText("");
+          setIsScanning((prev) => !prev);
+        }}
+      >
+        {isScanning ? "Stop Scan" : "Start Scan"}
+      </button>
+    </div>
+
+
     {scannedText && (
       <div className="scan-result">
         Scanned: {scannedText}
@@ -96,7 +106,7 @@ function App() {
 
       </div>
     </div>
-  </>
+  </div>
   );
 }
 

@@ -1,47 +1,43 @@
 import { Html5Qrcode } from "html5-qrcode";
 import { useEffect, useRef } from "react";
 
-function QRScanner({ onScan }) {
+function QRScanner({ isScanning, onScan }) {
   const scannerRef = useRef(null);
-  const scannedRef = useRef(false);
   const isRunningRef = useRef(false);
-  const initializedRef = useRef(false);
   const regionId = "qr-scanner-region";
 
   useEffect(() => {
-    if (initializedRef.current) return;
-    initializedRef.current = true;
+    if (!scannerRef.current) {
+      scannerRef.current = new Html5Qrcode(regionId);
+    }
 
-    const scanner = new Html5Qrcode(regionId);
-    scannerRef.current = scanner;
+    const scanner = scannerRef.current;
 
-    scanner.start(
-        { facingMode: "environment" },
-        { 
-          fps: 10,
-          qrbox: (viewfinderWidth, viewfinderHeight) => {
-            const size = Math.min(viewfinderWidth, viewfinderHeight);
-            return Math.floor(size * 0.7);
+    if (isScanning && !isRunningRef.current) {
+      scanner
+        .start(
+          { facingMode: "environment" },
+          {
+            fps: 10,
+            qrbox: (w, h) => {
+              const size = Math.floor(Math.min(w, h) * 0.7);
+              return { width: size, height: size };
+            },
+          },
+          (decodedText) => {
+            onScan(decodedText);
           }
-        },
-        (decodedText) => {
-          if (scannedRef.current) return;
+        )
+        .then(() => {
+          isRunningRef.current = true;
+        })
+        .catch(() => {});
+    }
 
-          scannedRef.current = true;
-          onScan(decodedText);
-
-          if (isRunningRef.current) {
-            scanner.stop().catch(() => {});
-            isRunningRef.current = false;
-          }
-        }
-      )
-      .then(() => {
-        isRunningRef.current = true;
-      })
-      .catch((err) => {
-        console.warn("QR Scanner error:", err);
-      });
+    if (!isScanning && isRunningRef.current) {
+      scanner.stop().catch(() => {});
+      isRunningRef.current = false;
+    }
 
     return () => {
       if (isRunningRef.current) {
@@ -49,7 +45,7 @@ function QRScanner({ onScan }) {
         isRunningRef.current = false;
       }
     };
-  }, []);
+  }, [isScanning, onScan]);
 
   return <div id={regionId} />;
 }
