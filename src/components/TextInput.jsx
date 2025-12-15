@@ -4,7 +4,12 @@ function TextInput({ value, onChange, onGenerate, disabled }) {
       <textarea
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        placeholder="Enter Text or URL here.."
+        disabled={disabled}
+        placeholder={
+          disabled
+            ? "Stop the scanner to enter text"
+            : "Enter text or URL here..."
+        }
       />
 
       <button
@@ -12,7 +17,7 @@ function TextInput({ value, onChange, onGenerate, disabled }) {
         onClick={onGenerate}
         disabled={disabled}
       >
-        {disabled ? "Generating..." : "Generate"}
+        Generate
       </button>
     </>
   );

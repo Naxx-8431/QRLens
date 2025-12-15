@@ -78,7 +78,7 @@ function App() {
     )}
     <div className="container">
       <div className="left">
-        <TextInput value={inputText} onChange={setInputText} onGenerate={handleGenerate} disabled={isGenerating} />
+        <TextInput value={inputText} onChange={setInputText} onGenerate={handleGenerate} disabled={isGenerating || isScanning} />
       </div>
 
       <div className="right">
