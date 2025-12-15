@@ -4,6 +4,7 @@ import { useEffect, useRef } from "react";
 function QRScanner({ isScanning, onScan }) {
   const scannerRef = useRef(null);
   const isRunningRef = useRef(false);
+  const lastScanRef = useRef(null);
   const regionId = "qr-scanner-region";
 
   useEffect(() => {
@@ -25,6 +26,8 @@ function QRScanner({ isScanning, onScan }) {
             },
           },
           (decodedText) => {
+            if (decodedText === lastScanRef.current) return;
+            lastScanRef.current = decodedText;
             onScan(decodedText);
           }
         )

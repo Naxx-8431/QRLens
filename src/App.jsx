@@ -14,6 +14,16 @@ function App() {
   const [generatedText, setGeneratedText] = useState(null);
   const canvasRef = useRef(null);
   const [isScanning, setIsScanning] = useState(false);
+  const [showScanPopup, setShowScanPopup] = useState(false);
+  const [copySuccess, setCopySuccess] = useState(false);
+  const isValidUrl = (text) => {
+    try {
+      new URL(text);
+      return true;
+    } catch {
+      return false;
+    }
+  };
   const handleGenerate = () => {
   if (!inputText.trim()) return;
 
@@ -55,6 +65,11 @@ function App() {
           onScan={(text) => {
             setScannedText(text);
             setIsScanning(false);
+            setShowScanPopup(true);
+
+            if (isValidUrl(text)) {
+              window.open(text, "_blank", "noopener,noreferrer");
+            }
           }}
         />
       </div>
@@ -71,37 +86,87 @@ function App() {
     </div>
 
 
-    {scannedText && (
-      <div className="scan-result">
-        Scanned: {scannedText}
+
+    {showScanPopup && (
+      <div className="scan-popup-overlay">
+        <div className="scan-popup">
+          <div className="sheet-handle" />
+          <h3>Scanned Result</h3>
+
+          <textarea
+            readOnly
+            value={scannedText}
+            className="scan-popup-text"
+          />
+
+          {copySuccess && (
+            <div className="copy-feedback">
+              Copied!
+            </div>
+          )}
+
+          <div className="scan-popup-actions">
+            <button
+              onClick={() => {
+                navigator.clipboard.writeText(scannedText);
+                setCopySuccess(true);
+
+                setTimeout(() => {
+                  setCopySuccess(false);
+                  setShowScanPopup(false);   // ✅ auto-close
+                }, 1000);
+              }}
+            >
+              Copy
+            </button>
+
+            <button
+              onClick={() => {
+                if (/^https?:\/\//i.test(scannedText)) {
+                  window.open(scannedText, "_blank", "noopener,noreferrer");
+                  setShowScanPopup(false);
+                } else {
+                  alert("Not a valid link");
+                }
+              }}
+            >
+              Open
+            </button>
+
+            <button
+              onClick={() => setShowScanPopup(false)}
+            >
+              Close
+            </button>
+          </div>
+        </div>
       </div>
     )}
+
+    
     <div className="container">
       <div className="left">
         <TextInput value={inputText} onChange={setInputText} onGenerate={handleGenerate} disabled={isGenerating || isScanning} />
       </div>
 
       <div className="right">
-        <div className="qr-wrapper">
 
-          {!generatedText && !isGenerating && (
-            <div className="placeholder">
-              Enter text and click Generate to see the QR code
-            </div>
-          )}
+        {!generatedText && !isGenerating && (
+          <div className="placeholder">
+            Enter text and click Generate to see the QR code
+          </div>
+        )}
 
-          {isGenerating && (
-            <ProgressBar progress={progress} />
-          )}
-
-          {generatedText && (
-            <QRCanvas text={generatedText} canvasRef={canvasRef} />
-          )}
-
-        </div>
+        {isGenerating && <ProgressBar progress={progress} />}
 
         {generatedText && (
-          <QRActions canvasRef={canvasRef} text={generatedText} />
+          <div className="qr-block">
+            <div className="qr-wrapper">
+              <QRCanvas text={generatedText} canvasRef={canvasRef} />
+            </div>
+
+            <QRActions canvasRef={canvasRef} text={generatedText} />
+          </div>
         )}
 
       </div>
