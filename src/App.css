@@ -1,11 +1,16 @@
 :root {
   --qr-box-size: 320px;
+  font-family: "Inter", system-ui, -apple-system, BlinkMacSystemFont,
+    "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, "Helvetica Neue",
+    Arial, sans-serif;
+
+  line-height: 1.5;
+  font-weight: 400;
 }
 
 #root {
   width: 100%;
-  display: flex;
-  justify-content: center;
+
 }
 
 *,
@@ -16,6 +21,56 @@
 
 body {
   margin: 0;
+  background-color: var(--bg);
+  color: var(--text);
+}
+
+/* ===== Header ===== */
+.app-header {
+  width: 100%;
+  max-width: 960px;
+  margin-inline: auto;
+  padding: 12px 16px;
+
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  background: var(--surface);
+  color: var(--text);
+  border-bottom: 1px solid var(--border);
+}
+
+.app-title {
+  font-size: 1.2rem;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+}
+
+/* ===== Theme toggle ===== */
+.theme-toggle {
+  display: flex;
+  gap: 6px;
+}
+
+.theme-toggle button {
+  padding: 6px 10px;
+  border-radius: 8px;
+
+  background: var(--btn-bg);
+  color: var(--btn-text);
+  border: 1px solid var(--btn-border);
+
+  cursor: pointer;
+}
+
+.theme-toggle button:hover {
+  background: var(--btn-bg-hover);
+  color: var(--btn-text-hover);
+}
+
+.theme-toggle button.active {
+  outline: 2px solid var(--accent);
 }
 
 .app-layout {
@@ -59,10 +114,10 @@ textarea {
   resize: none;
   overflow-y: auto;
   height: 300px;
-  background: #ffffff74;
-  color: #272727;
-  border: 1px solid rgba(128, 128, 128, 0.44);
   border-radius: 8px;
+  background: var(--surface-soft);
+  color: var(--text);
+  border: 1px solid var(--border);
 }
 
 textarea:disabled {
@@ -72,7 +127,7 @@ textarea:disabled {
 
 .gen-button {
   width: 100%;
-  margin-top: 4px;
+  margin-top: 8px;
 }
 
 canvas {
@@ -80,7 +135,7 @@ canvas {
   aspect-ratio: 1 / 1;
   height: auto;
   display: block;
-  border: 1px solid rgba(128, 128, 128, 0.44);
+  border: 1px solid var(--border);
   border-radius: 8px;
 }
 
@@ -92,6 +147,7 @@ canvas {
 
 .placeholder {
   text-align: center;
+  color: var(--muted-text);
   opacity: 0.6;
 }
 
@@ -101,7 +157,6 @@ canvas {
   grid-template-columns: 1fr 1fr;
   gap: 8px;
 }
-
 
 
 .qr-block {
@@ -115,7 +170,7 @@ canvas {
 
 .action-button {
   width: 100%;
-  margin-top: 4px;
+  margin-top: 8px;
 }
 
 .progress {
@@ -134,6 +189,35 @@ canvas {
 
 .scanner-hidden {
   display: none;
+}
+
+.scanner-container {
+  position: relative;
+}
+
+.scan-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+
+.scan-box {
+  width: 70%;
+  aspect-ratio: 1 / 1;
+  border: 2px solid #00ffcc;
+  border-radius: 12px;
+  box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.45);
+}
+
+.scan-hint {
+  margin-top: 12px;
+  color: var(--muted-text);
+  font-size: clamp(0.75rem, 2.5vw, 0.9rem);
+  opacity: 0.6;
 }
 
 .scanner-section {
@@ -155,18 +239,38 @@ canvas {
   text-align: center;
 }
 
-
-#qr-scanner-region {
-  width: 100% !important;
-  height: 100% !important;
+.scanner-type-btn {
+  display: flex;
+  flex-direction: row;
+  gap: 8px;
 }
 
-#qr-scanner-region video {
-  width: 100% !important;
-  height: 100% !important;
-  object-fit: cover;
+.scanner-btn {
+  border: 1px solid;
+  border-color: var(--btn-border);
 }
 
+.scanner-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.scanner-container {
+  border: none !important;
+  outline: none !important;
+}
+
+
+.scan-box {
+  position: absolute;
+  width: 70%;
+  aspect-ratio: 1 / 1;
+  border: 2px solid;
+  border-color: var(--accent);
+  border-radius: 14px;
+  pointer-events: none;
+  box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.395);
+}
 
 .scan-popup-overlay {
   position: fixed;
@@ -179,7 +283,8 @@ canvas {
 }
 
 .scan-popup {
-  background: #fff;
+  background: var(--surface);
+  color: var(--text);
   width: min(90vw, 420px);
   padding: 20px;
   border-radius: 12px;
@@ -187,6 +292,45 @@ canvas {
   display: flex;
   flex-direction: column;
   gap: 12px;
+}
+
+#qr-scanner-region {
+  width: 100% !important;
+  height: 100% !important;
+}
+
+#qr-scanner-region video {
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: cover;
+}
+
+#qr-scanner-region canvas {
+  border: none !important;
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+/* video itself should be clean */
+#qr-scanner-region video {
+  border: none !important;
+  outline: none !important;
+}
+
+#qr-scanner-region * {
+  border: none !important;
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+#qr-scanner-region canvas {
+  display: none !important;
+}
+
+/* Video must stay visible */
+#qr-scanner-region video {
+  display: block !important;
+  border-radius: inherit;
 }
 
 .sheet-handle {
@@ -216,6 +360,62 @@ canvas {
 .scan-popup-actions button {
   flex: 1;
 }
+
+/* ===== Header ===== */
+.app-header {
+  width: 100%;
+  padding: 12px 16px;
+
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  background: var(--surface, #fff);
+  color: var(--text, #000);
+  border-bottom: 1px solid var(--border, #ddd);
+}
+
+
+.app-title {
+  font-size: 1.2rem;
+  font-weight: 600;
+}
+
+.header-right {
+  display: flex;
+  align-items: center;
+}
+
+.theme-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--btn-bg);
+  color: var(--btn-text);
+  border: 1px solid var(--btn-border);
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: background-color 0.25s ease, color 0.25s ease;
+}
+
+.theme-btn:hover {
+  background: var(--btn-bg-hover);
+  color: var(--btn-text-hover);
+}
+
+.gen-button:disabled,
+.theme-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.material-symbols-outlined {
+  font-size: 22px;
+  line-height: 1;
+}
+
 
 @keyframes sheetUp {
   from {
@@ -252,6 +452,7 @@ canvas {
   .scan-popup {
     width: 100%;
     max-width: 100%;
+    touch-action: pan-y;
     border-radius: 16px 16px 0 0;
     padding: 16px 16px 24px;
     animation: sheetUp 0.25s ease-out;

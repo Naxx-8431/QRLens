@@ -1,20 +1,20 @@
 import { Html5Qrcode } from "html5-qrcode";
 import { useEffect, useRef } from "react";
 
+const SCANNER_ID = "qr-scanner-region";
+
 function QRScanner({ isScanning, onScan }) {
-  const scannerRef = useRef(null);
-  const isRunningRef = useRef(false);
-  const lastScanRef = useRef(null);
-  const regionId = "qr-scanner-region";
+  const qrRef = useRef(null);
+  const runningRef = useRef(false);
 
   useEffect(() => {
-    if (!scannerRef.current) {
-      scannerRef.current = new Html5Qrcode(regionId);
+    if (!qrRef.current) {
+      qrRef.current = new Html5Qrcode(SCANNER_ID);
     }
 
-    const scanner = scannerRef.current;
+    const scanner = qrRef.current;
 
-    if (isScanning && !isRunningRef.current) {
+    if (isScanning && !runningRef.current) {
       scanner
         .start(
           { facingMode: "environment" },
@@ -26,31 +26,35 @@ function QRScanner({ isScanning, onScan }) {
             },
           },
           (decodedText) => {
-            if (decodedText === lastScanRef.current) return;
-            lastScanRef.current = decodedText;
-            onScan(decodedText);
+            if (!runningRef.current) return;
+
+            runningRef.current = false;
+
+            scanner.stop().then(() => {
+              onScan(decodedText);
+            });
           }
         )
         .then(() => {
-          isRunningRef.current = true;
+          runningRef.current = true;
         })
         .catch(() => {});
     }
 
-    if (!isScanning && isRunningRef.current) {
+    if (!isScanning && runningRef.current) {
       scanner.stop().catch(() => {});
-      isRunningRef.current = false;
+      runningRef.current = false;
     }
 
     return () => {
-      if (isRunningRef.current) {
+      if (runningRef.current) {
         scanner.stop().catch(() => {});
-        isRunningRef.current = false;
+        runningRef.current = false;
       }
     };
   }, [isScanning, onScan]);
 
-  return <div id={regionId} />;
+  return <div id={SCANNER_ID} />;
 }
 
 export default QRScanner;
