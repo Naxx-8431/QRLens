@@ -16,6 +16,7 @@ function App() {
   const [isScanning, setIsScanning] = useState(false);
   const [showScanPopup, setShowScanPopup] = useState(false);
   const [copySuccess, setCopySuccess] = useState(false);
+  
   const isValidUrl = (text) => {
     try {
       new URL(text);
@@ -118,7 +119,7 @@ function App() {
 
             <button
               onClick={() => {
-                if (/^https?:\/\//i.test(scannedText)) {
+                if (isValidUrl(scannedText)) {
                   window.open(scannedText, "_blank", "noopener,noreferrer");
                   setShowScanPopup(false);
                 } else {

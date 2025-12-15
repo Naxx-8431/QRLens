@@ -11,32 +11,35 @@ function QRActions({ canvasRef, text }) {
     link.click();
   };
 
-  const handleShare = () => {
+  const handleShare = async () => {
+    if (!canvasRef?.current) return;
+
     const canvas = canvasRef.current;
-    if (!canvas) return;
 
-    canvas.toBlob(async (blob) => {
-      if (!blob) return;
+    const blob = await new Promise((resolve) =>
+      canvas.toBlob(resolve, "image/png")
+    );
 
-      const file = new File([blob], "qr-code.png", {
-        type: "image/png",
-      });
-
-      if (!navigator.canShare || !navigator.canShare({ files: [file] })) {
-        alert("Image sharing not supported on this device");
-        return;
-      }
-
-      try {
-        await navigator.share({
-          files: [file],
-          title: "QR Code",
-          text: "Scan this QR code",
-        });
-      } catch (err) {
-        console.log("Share cancelled");
-      }
+    const file = new File([blob], "qr-code.png", {
+      type: "image/png",
     });
+
+    const shareData = {
+      title: "QR Code",
+      text: text,
+      files: [file],
+    };
+
+    if (navigator.canShare && navigator.canShare(shareData)) {
+      try {
+        await navigator.share(shareData);
+      } catch (err) {
+        console.warn("Share cancelled", err);
+      }
+    } else {
+      navigator.clipboard.writeText(text);
+      alert("Sharing not supported. Text copied instead.");
+    }
   };
 
 
