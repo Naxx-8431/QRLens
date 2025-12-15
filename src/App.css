@@ -32,7 +32,7 @@ body {
   width: 100%;
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 32px;
+  gap: 20px;
   box-sizing: border-box;
   padding-block: clamp(16px, 3vw, 32px);
   justify-items: center;
@@ -41,8 +41,7 @@ body {
 
 .left,
 .right {
-  width: min(100%, 520px);
-  max-width: none;
+  width: 100%;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -59,7 +58,7 @@ textarea {
   box-sizing: border-box;
   resize: none;
   overflow-y: auto;
-  height: var(--qr-box-size);
+  height: 300px;
   background: #ffffff74;
   color: #272727;
   border: 1px solid rgba(128, 128, 128, 0.44);
@@ -73,21 +72,20 @@ textarea:disabled {
 
 .gen-button {
   width: 100%;
-  margin-top: 2px;
+  margin-top: 8px;
 }
 
 canvas {
-  border: 1px solid rgba(128, 128, 128, 0.44);
-  border-radius: 8px;
   width: 100%;
   aspect-ratio: 1 / 1;
   height: auto;
   display: block;
+  border: 1px solid rgba(128, 128, 128, 0.44);
+  border-radius: 8px;
 }
 
 .qr-wrapper {
-  width: min(320px, 90vw);
-  margin-inline: auto;
+  width: 100%;
   display: flex;
   justify-content: center;
 }
@@ -102,15 +100,18 @@ canvas {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 8px;
+  margin-top: 8px;
 }
 
-.qr-actions button {
-  width: 100%;
-}
+
 
 .qr-block {
-  width: fit-content;
+  width: 300px;
+  max-width: 90vw;
   margin-inline: auto;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
 }
 
 .action-button {
@@ -237,12 +238,13 @@ canvas {
   .right {
     margin-inline: auto;
   }
+
+  canvas {
+    border: none;
+  }
 }
 
 @media (max-width: 600px) {
-  :root {
-    --qr-box-size: 260px;
-  }
 
   .scan-popup-overlay {
     align-items: flex-end;

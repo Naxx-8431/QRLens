@@ -66,10 +66,6 @@ function App() {
             setScannedText(text);
             setIsScanning(false);
             setShowScanPopup(true);
-
-            if (isValidUrl(text)) {
-              window.open(text, "_blank", "noopener,noreferrer");
-            }
           }}
         />
       </div>
