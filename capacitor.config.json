@@ -1,0 +1,6 @@
+{
+  "appId": "com.mnx.qrlens",
+  "appName": "QRLens",
+  "webDir": "dist",
+  "bundledWebRuntime": false
+}

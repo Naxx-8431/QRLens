@@ -21,7 +21,7 @@ function QRScanner({ isScanning, onScan }) {
           {
             fps: 10,
             qrbox: (w, h) => {
-              const size = Math.floor(Math.min(w, h) * 0.7);
+              const size = Math.floor(Math.min(w, h));
               return { width: size, height: size };
             },
           },

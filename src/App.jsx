@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from "react";
+import { Camera } from "@capacitor/camera";
 import TextInput from "./components/TextInput";
 import QRCanvas from "./components/QRCanvas";
 import QRActions from "./components/QRActions";
@@ -33,6 +34,10 @@ function App() {
   const popupRef = useRef(null);
   const startYRef = useRef(0);
   const currentYRef = useRef(0);
+  const requestCameraPermission = async () => {
+    const perm = await Camera.requestPermissions({ permissions: ["camera"] });
+    return perm.camera === "granted";
+  };
   const onTouchStart = (e) => {
     startYRef.current = e.touches[0].clientY;
   };
@@ -159,22 +164,29 @@ function App() {
           <div className="scanner-type-btn">
             <button
               className="scanner-btn"
-              disabled={appBusy === "generating"} // only block during generation
-              onClick={() => {
+              disabled={appBusy === "generating"}
+              onClick={async () => {
+          
                 if (isScanning) {
-                  // STOP scan
                   setIsScanning(false);
                   setAppBusy(null);
-                } else {
-                  // START scan
-                  setScannedText("");
-                  setIsScanning(true);
-                  setAppBusy("scanning");
+                  return;
                 }
+
+                
+                const granted = await requestCameraPermission();
+                if (!granted) {
+                  alert("Camera permission required");
+                  return;
+                }
+
+                setIsScanning(true);
+                setAppBusy("scanning");
               }}
             >
               {isScanning ? "Stop Scan" : "Start Scan"}
             </button>
+
 
 
               <button
@@ -289,7 +301,7 @@ function App() {
                   <QRCanvas text={generatedText} canvasRef={canvasRef} />
                 </div>
 
-                <QRActions canvasRef={canvasRef} text={generatedText} />
+                <QRActions canvasRef={canvasRef} text={generatedText} appBusy={appBusy} />
               </div>
             )}
 
