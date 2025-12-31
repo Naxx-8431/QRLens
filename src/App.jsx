@@ -7,64 +7,68 @@ import QRActions from "./components/QRActions";
 import ProgressBar from "./components/ProgressBar";
 import QRScanner from "./components/QRScanner";
 import QRImageScanner from "./components/QRImageScanner";
-import './App.css'
+import "./App.css";
+
+/* =======================
+   App Modes (Single Source of Truth)
+======================= */
+const APP_MODES = {
+  IDLE: "idle",
+  TYPING: "typing",
+  GENERATING: "generating",
+  SCANNING: "scanning",
+  RESULT: "result",
+  SCAN_RESULT: "scan_result",
+};
 
 function App() {
+  /* =======================
+     Theme
+  ======================= */
   const getInitialTheme = () => {
     const saved = localStorage.getItem("theme");
     if (saved) return saved;
-
     return window.matchMedia("(prefers-color-scheme: dark)").matches
       ? "dark"
       : "light";
   };
 
-  const [appBusy, setAppBusy] = useState(null);
   const [theme, setTheme] = useState(getInitialTheme);
-  const [scannedText, setScannedText] = useState("");
-  const [isGenerating, setIsGenerating] = useState(false);
-  const [progress, setProgress] = useState(0);
+
+  /* =======================
+     App State
+  ======================= */
+  const [appMode, setAppMode] = useState(APP_MODES.IDLE);
+
   const [inputText, setInputText] = useState("");
   const [generatedText, setGeneratedText] = useState(null);
-  const canvasRef = useRef(null);
+
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [progress, setProgress] = useState(0);
+
   const [isScanning, setIsScanning] = useState(false);
+  const [scannedText, setScannedText] = useState("");
   const [showScanPopup, setShowScanPopup] = useState(false);
   const [copySuccess, setCopySuccess] = useState(false);
+
+  /* =======================
+     Refs
+  ======================= */
+  const canvasRef = useRef(null);
   const imageScannerRef = useRef(null);
   const imageInputRef = useRef(null);
   const popupRef = useRef(null);
   const startYRef = useRef(0);
   const currentYRef = useRef(0);
+
+  /* =======================
+     Utils
+  ======================= */
   const requestCameraPermission = async () => {
     const perm = await Camera.requestPermissions({ permissions: ["camera"] });
     return perm.camera === "granted";
   };
-  const onTouchStart = (e) => {
-    startYRef.current = e.touches[0].clientY;
-  };
 
-  const onTouchMove = (e) => {
-    currentYRef.current = e.touches[0].clientY;
-    const diff = currentYRef.current - startYRef.current;
-
-    if (diff > 0) {
-      popupRef.current.style.transform = `translateY(${diff}px)`;
-    }
-  };
-
-  const onTouchEnd = () => {
-    const diff = currentYRef.current - startYRef.current;
-
-    if (diff > 120) {
-      closeScanPopup();
-    } else {
-      popupRef.current.style.transform = `translateY(0)`;
-    }
-
-    startYRef.current = 0;
-    currentYRef.current = 0;
-  };
-  
   const isValidUrl = (text) => {
     try {
       new URL(text);
@@ -73,28 +77,24 @@ function App() {
       return false;
     }
   };
+
+  /* =======================
+     Generate QR
+  ======================= */
   const handleGenerate = () => {
     if (!inputText.trim()) return;
 
-    setAppBusy("generating");
-    setIsGenerating(true);
-    setProgress(0);
     setGeneratedText(null);
+    setProgress(0);
+    setIsGenerating(true);
+    setAppMode(APP_MODES.GENERATING);
   };
 
-  const closeScanPopup = () => {
-    setShowScanPopup(false);
-    setScannedText("");
-    setAppBusy(null);   
-  };
-
+  /* =======================
+     Progress Simulation
+  ======================= */
   useEffect(() => {
-    document.documentElement.setAttribute("data-theme", theme);
-    localStorage.setItem("theme", theme);
-  }, [theme]);
-    
-  useEffect(() => {
-  if (!isGenerating) return;
+    if (!isGenerating) return;
 
     const interval = setInterval(() => {
       setProgress((prev) => {
@@ -102,6 +102,7 @@ function App() {
           clearInterval(interval);
           setGeneratedText(inputText.trim());
           setIsGenerating(false);
+          setAppMode(APP_MODES.RESULT);
           return 100;
         }
         return prev + 2;
@@ -111,36 +112,66 @@ function App() {
     return () => clearInterval(interval);
   }, [isGenerating, inputText]);
 
+  /* =======================
+     Theme Effect
+  ======================= */
   useEffect(() => {
-    if (!isScanning && !isGenerating) {
-      setAppBusy(null);
-    }
-  }, [isScanning, isGenerating]);
+    document.documentElement.setAttribute("data-theme", theme);
+    localStorage.setItem("theme", theme);
+  }, [theme]);
 
+  /* =======================
+     Scan Popup Controls
+  ======================= */
+  const closeScanPopup = () => {
+    setShowScanPopup(false);
+    setScannedText("");
+    setAppMode(APP_MODES.IDLE);
+  };
+
+  const onTouchStart = (e) => {
+    startYRef.current = e.touches[0].clientY;
+  };
+
+  const onTouchMove = (e) => {
+    currentYRef.current = e.touches[0].clientY;
+    const diff = currentYRef.current - startYRef.current;
+    if (diff > 0) popupRef.current.style.transform = `translateY(${diff}px)`;
+  };
+
+  const onTouchEnd = () => {
+    const diff = currentYRef.current - startYRef.current;
+    if (diff > 120) closeScanPopup();
+    else popupRef.current.style.transform = `translateY(0)`;
+
+    startYRef.current = 0;
+    currentYRef.current = 0;
+  };
+
+  /* =======================
+     Render
+  ======================= */
   return (
-
     <>
+      {/* ===== Header ===== */}
       <header className="app-header">
-        <div><img src={logo} alt="logo" className="header-logo" /></div>
+        <img src={logo} alt="logo" className="header-logo" />
 
-        <div className="header-right">
-          <button
-            className="theme-btn"
-            disabled={appBusy !== null} // ✅ KEY FIX
-            onClick={() =>
-              setTheme((prev) => (prev === "dark" ? "light" : "dark"))
-            }
-            aria-label="Toggle theme"
-          >
-            <span className="material-symbols-outlined">
-              {theme === "dark" ? "light_mode" : "dark_mode"}
-            </span>
-          </button>
-        </div>
+        <button
+          className="theme-btn"
+          disabled={appMode === APP_MODES.GENERATING || appMode === APP_MODES.SCANNING}
+          onClick={() =>
+            setTheme((prev) => (prev === "dark" ? "light" : "dark"))
+          }
+        >
+          <span className="material-symbols-outlined">
+            {theme === "dark" ? "light_mode" : "dark_mode"}
+          </span>
+        </button>
       </header>
 
       <div className="app-layout">
-
+        {/* ===== Scanner ===== */}
         <div className="scanner-section">
           <div
             className={`scanner-container ${
@@ -150,9 +181,11 @@ function App() {
             <QRScanner
               isScanning={isScanning}
               onScan={(text) => {
+                setGeneratedText(null);
                 setScannedText(text);
                 setIsScanning(false);
                 setShowScanPopup(true);
+                setAppMode(APP_MODES.SCAN_RESULT);
               }}
             />
 
@@ -165,24 +198,20 @@ function App() {
           <div className="scanner-type-btn">
             <button
               className="scanner-btn"
-              disabled={appBusy === "generating"}
+              disabled={appMode === APP_MODES.GENERATING}
               onClick={async () => {
-          
                 if (isScanning) {
                   setIsScanning(false);
-                  setAppBusy(null);
+                  setAppMode(APP_MODES.IDLE);
                   return;
                 }
 
-                
                 const granted = await requestCameraPermission();
-                if (!granted) {
-                  alert("Camera permission required");
-                  return;
-                }
+                if (!granted) return alert("Camera permission required");
 
+                setGeneratedText(null);
                 setIsScanning(true);
-                setAppBusy("scanning");
+                setAppMode(APP_MODES.SCANNING);
               }}
             >
               <span className="material-symbols-outlined">
@@ -190,29 +219,31 @@ function App() {
               </span>
             </button>
 
+            <button
+              className="scanner-btn"
+              disabled={appMode === APP_MODES.GENERATING || appMode === APP_MODES.SCANNING}
+              onClick={() => {
+                setGeneratedText(null);
+                imageInputRef.current.click();
+              }}
+            >
+              <span className="material-symbols-outlined">image</span>
+            </button>
+          </div>
 
-
-              <button
-                className="scanner-btn"
-                disabled={appBusy !== null}
-                onClick={() => imageInputRef.current.click()}
-              >
-                <span className="material-symbols-outlined">image</span>
-                
-              </button>
-            </div>
           <QRImageScanner
             ref={imageScannerRef}
             onScan={(text) => {
+              setGeneratedText(null);
               setScannedText(text);
               setShowScanPopup(true);
-              setAppBusy(null);
+              setAppMode(APP_MODES.SCAN_RESULT);
             }}
           />
 
           <input
             type="file"
-            accept="image/png,image/jpeg,image/jpg,image/webp"
+            accept="image/*"
             ref={imageInputRef}
             style={{ display: "none" }}
             onChange={(e) =>
@@ -221,8 +252,7 @@ function App() {
           />
         </div>
 
-
-
+        {/* ===== Scan Result Popup ===== */}
         {showScanPopup && (
           <div className="scan-popup-overlay">
             <div
@@ -235,28 +265,17 @@ function App() {
               <div className="sheet-handle" />
               <h3>Scanned Result</h3>
 
-              <textarea
-                readOnly
-                value={scannedText}
-                className="scan-popup-text"
-              />
-
-              {copySuccess && (
-                <div className="copy-feedback">
-                  Copied!
-                </div>
-              )}
+              <textarea readOnly value={scannedText} />
 
               <div className="scan-popup-actions">
                 <button
                   onClick={() => {
                     navigator.clipboard.writeText(scannedText);
                     setCopySuccess(true);
-
                     setTimeout(() => {
                       setCopySuccess(false);
-                      closeScanPopup(); // ✅
-                    }, 1000);
+                      closeScanPopup();
+                    }, 800);
                   }}
                 >
                   <span className="material-symbols-outlined">content_copy</span>
@@ -265,14 +284,12 @@ function App() {
                 <button
                   onClick={() => {
                     if (isValidUrl(scannedText)) {
-                      window.open(scannedText, "_blank", "noopener,noreferrer");
-                      closeScanPopup(); // ✅
-                    } else {
-                      alert("Not a valid link");
-                    }
+                      window.open(scannedText, "_blank");
+                      closeScanPopup();
+                    } else alert("Not a valid link");
                   }}
                 >
-                 <span className="material-symbols-outlined">open_in_new</span>
+                  <span className="material-symbols-outlined">open_in_new</span>
                 </button>
 
                 <button onClick={closeScanPopup}>
@@ -283,36 +300,46 @@ function App() {
           </div>
         )}
 
-        
+        {/* ===== Main Content ===== */}
         <div className="container">
           <div className="left">
-            <TextInput value={inputText} onChange={setInputText} onGenerate={handleGenerate}  disabled={appBusy !== null} />
+            <TextInput
+              value={inputText}
+              onChange={(val) => {
+                setInputText(val);
+                setGeneratedText(null);
+                setAppMode(APP_MODES.TYPING);
+              }}
+              onGenerate={handleGenerate}
+              disabled={
+                appMode === APP_MODES.SCANNING ||
+                appMode === APP_MODES.GENERATING
+              }
+            />
           </div>
 
           <div className="right">
-
-            {!generatedText && !isGenerating && (
-              <div className="placeholder">
-                Enter text and click Generate to see the QR code
-              </div>
+            {appMode === APP_MODES.GENERATING && (
+              <ProgressBar progress={progress} />
             )}
 
-            {isGenerating && <ProgressBar progress={progress} />}
-
-            {generatedText && (
+            {appMode === APP_MODES.RESULT && generatedText && (
               <div className="qr-block">
-                <div className="qr-wrapper">
-                  <QRCanvas text={generatedText} canvasRef={canvasRef} />
-                </div>
-
-                <QRActions canvasRef={canvasRef} text={generatedText} appBusy={appBusy} />
+                <QRCanvas text={generatedText} canvasRef={canvasRef} />
+                <QRActions canvasRef={canvasRef} text={generatedText} />
               </div>
             )}
 
+            {appMode !== APP_MODES.RESULT &&
+              appMode !== APP_MODES.GENERATING && (
+                <div className="placeholder">
+                  Enter text and click Generate to see the QR code
+                </div>
+              )}
           </div>
         </div>
       </div>
-  </>
+    </>
   );
 }
 

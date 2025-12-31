@@ -22,3 +22,29 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+
+# node
+node_modules/
+dist/
+
+# env
+.env
+.env.local
+
+# build
+build/
+
+# Android
+android/.gradle/
+android/.idea/
+android/build/
+android/app/build/
+android/local.properties
+*.keystore
+*.jks
+
+# OS
+.DS_Store
+Thumbs.db
+
