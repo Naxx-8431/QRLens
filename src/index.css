@@ -53,6 +53,24 @@ body {
   text-size-adjust: 100%;
 }
 
+* {
+  -webkit-tap-highlight-color: transparent;
+  -webkit-touch-callout: none;
+  /* Disables the popup menu on iOS/Android */
+  user-select: none;
+  /* Disables text selection */
+  -webkit-user-select: none;
+}
+
+/* Re-enable selection for the input areas so the user can still type/edit */
+textarea,
+input,
+.scan-popup-text {
+  user-select: text !important;
+  -webkit-user-select: text !important;
+  -webkit-touch-callout: default !important;
+}
+
 html::-webkit-scrollbar,
 body::-webkit-scrollbar {
   display: none;

@@ -37,6 +37,13 @@ function QRScanner({ isScanning, onScan }) {
         )
         .then(() => {
           runningRef.current = true;
+          
+          const videoElem = document.querySelector(`#${SCANNER_ID} video`);
+          if (videoElem) {
+            videoElem.setAttribute("playsinline", "true");
+            videoElem.setAttribute("muted", "true");
+            videoElem.style.opacity = "1"; 
+          }
         })
         .catch(() => {});
     }

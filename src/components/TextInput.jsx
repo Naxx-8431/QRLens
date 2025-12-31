@@ -17,7 +17,8 @@ function TextInput({ value, onChange, onGenerate, disabled }) {
         onClick={onGenerate}
         disabled={disabled}
       >
-        Generate
+        <span className="material-symbols-outlined">qr_code_2</span>
+        <span>Generate</span>
       </button>
     </>
   );

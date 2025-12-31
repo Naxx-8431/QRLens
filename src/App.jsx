@@ -1,3 +1,4 @@
+import logo from "../assets/icon.png";
 import { useState, useRef, useEffect } from "react";
 import { Camera } from "@capacitor/camera";
 import TextInput from "./components/TextInput";
@@ -120,7 +121,7 @@ function App() {
 
     <>
       <header className="app-header">
-        <div className="app-title">QRLens</div>
+        <div><img src={logo} alt="logo" className="header-logo" /></div>
 
         <div className="header-right">
           <button
@@ -184,7 +185,9 @@ function App() {
                 setAppBusy("scanning");
               }}
             >
-              {isScanning ? "Stop Scan" : "Start Scan"}
+              <span className="material-symbols-outlined">
+                {isScanning ? "videocam_off" : "photo_camera"}
+              </span>
             </button>
 
 
@@ -194,7 +197,8 @@ function App() {
                 disabled={appBusy !== null}
                 onClick={() => imageInputRef.current.click()}
               >
-                Scan Image
+                <span className="material-symbols-outlined">image</span>
+                
               </button>
             </div>
           <QRImageScanner
@@ -255,7 +259,7 @@ function App() {
                     }, 1000);
                   }}
                 >
-                  Copy
+                  <span className="material-symbols-outlined">content_copy</span>
                 </button>
 
                 <button
@@ -268,11 +272,11 @@ function App() {
                     }
                   }}
                 >
-                  Open
+                 <span className="material-symbols-outlined">open_in_new</span>
                 </button>
 
                 <button onClick={closeScanPopup}>
-                  Close
+                  <span className="material-symbols-outlined">close</span>
                 </button>
               </div>
             </div>
@@ -282,7 +286,7 @@ function App() {
         
         <div className="container">
           <div className="left">
-            <TextInput value={inputText} onChange={setInputText} onGenerate={handleGenerate} disabled={appBusy !== null} />
+            <TextInput value={inputText} onChange={setInputText} onGenerate={handleGenerate}  disabled={appBusy !== null} />
           </div>
 
           <div className="right">

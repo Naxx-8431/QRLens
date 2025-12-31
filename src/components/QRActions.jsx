@@ -52,7 +52,7 @@ function QRActions({ canvasRef, text, appBusy }) {
         onClick={downloadQR}
         disabled={appBusy !== null}
       >
-        Save
+        <span className="material-symbols-outlined">download</span>
       </button>
 
       <button
@@ -60,7 +60,7 @@ function QRActions({ canvasRef, text, appBusy }) {
         onClick={shareQR}
         disabled={appBusy !== null}
       >
-        Share
+        <span className="material-symbols-outlined">share</span>
       </button>
     </div>
   );
