@@ -2,5 +2,13 @@
   "appId": "com.mnx.qrlens",
   "appName": "QRLens",
   "webDir": "dist",
-  "bundledWebRuntime": false
+  "backgroundColor": "#000000",
+  "android": {
+    "backgroundColor": "#000000"
+  },
+  "plugins": {
+    "SystemBars": {
+      "style": "DARK"
+    }
+  }
 }
