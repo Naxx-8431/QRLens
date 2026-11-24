@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { memo, useCallback, useEffect, useRef, useState } from "react";
 import Icon from "../components/Icon";
 import { Glyph } from "../components/controls";
 import { detect, detectInFile, warmUp } from "../lib/scanner";
@@ -9,31 +9,33 @@ import { setSetting, toast, useSettings } from "../lib/store";
 /** How long a code must be out of view before it can be scanned again. */
 const REARM_MS = 2500;
 const FRAME_GAP_MS = 80;
+/**
+ * After leaving the tab, keep the camera until the screen has faded out. Cutting the
+ * stream mid-fade makes Android's WebView flash its placeholder over the video.
+ */
+const RELEASE_MS = 400;
+/** A 1x1 transparent GIF, shown instead of the WebView's default video placeholder. */
+const BLANK_POSTER = "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7";
 
 const IDLE_COPY = {
   idle: {
-    eyebrow: "Camera off",
     title: "Ready",
     body: "Point the camera at any QR code or barcode. Decoding happens on this device.",
   },
-  starting: { eyebrow: "Starting", title: "Waking", body: "Opening the camera…" },
+  starting: { title: "Waking", body: "Opening the camera…" },
   denied: {
-    eyebrow: "Permission needed",
     title: "Blocked",
     body: "Camera access is turned off for QR Lens. Allow it in settings, or scan a saved image instead.",
   },
   nocamera: {
-    eyebrow: "No camera",
     title: "No lens",
     body: "This device has no camera available. You can still scan a saved image.",
   },
   unsupported: {
-    eyebrow: "Unavailable",
     title: "No lens",
     body: "The camera cannot be opened here. It needs a secure (HTTPS) page. You can still scan a saved image.",
   },
   error: {
-    eyebrow: "Camera error",
     title: "Retry",
     body: "The camera could not start. It may be in use by another app.",
   },
@@ -57,7 +59,7 @@ function projectPoints(points, video, mirrored) {
     .join(" ");
 }
 
-export default function ScanScreen({ active, paused, onDetected, onOpenHistory }) {
+function ScanScreen({ active, paused, onDetected, onOpenHistory }) {
   const settings = useSettings();
 
   const [status, setStatus] = useState("idle");
@@ -80,6 +82,8 @@ export default function ScanScreen({ active, paused, onDetected, onOpenHistory }
   const seenRef = useRef(new Map());
   const outlineTimerRef = useRef(0);
   const live = useRef({ paused, batch: settings.batch, onDetected });
+  const activeRef = useRef(active);
+  const releaseTimerRef = useRef(0);
 
   useEffect(() => {
     // Coming back from a result: whatever is still in view was already handled.
@@ -215,11 +219,11 @@ export default function ScanScreen({ active, paused, onDetected, onOpenHistory }
 
     const tick = async () => {
       if (session !== sessionRef.current) return;
-      if (!live.current.paused && !document.hidden && video.readyState >= 2) {
+      if (!live.current.paused && activeRef.current && !document.hidden && video.readyState >= 2) {
         try {
           const codes = await detect(video);
           if (session !== sessionRef.current) return;
-          if (codes.length && !live.current.paused) handleCodes(codes, video);
+          if (codes.length && !live.current.paused && activeRef.current) handleCodes(codes, video);
         } catch {
           /* a failed frame is not worth interrupting the session for */
         }
@@ -231,20 +235,31 @@ export default function ScanScreen({ active, paused, onDetected, onOpenHistory }
 
   // The camera only runs while this tab is on screen and the page is visible.
   useEffect(() => {
+    activeRef.current = active;
     if (!active) return;
+    // Back before the camera was released: it is still running, so keep it.
+    clearTimeout(releaseTimerRef.current);
     const resume = () => {
       if (document.hidden) stop();
-      else if (wantLiveRef.current) start();
+      else if (wantLiveRef.current && !streamRef.current) start();
     };
     resume();
     document.addEventListener("visibilitychange", resume);
     return () => {
       document.removeEventListener("visibilitychange", resume);
-      stop();
+      activeRef.current = false;
+      releaseTimerRef.current = setTimeout(stop, RELEASE_MS);
     };
   }, [active, start, stop]);
 
-  useEffect(() => () => clearTimeout(outlineTimerRef.current), []);
+  useEffect(
+    () => () => {
+      clearTimeout(outlineTimerRef.current);
+      clearTimeout(releaseTimerRef.current);
+      stop();
+    },
+    [stop]
+  );
 
   const toggleCamera = () => {
     if (status === "live" || status === "starting") {
@@ -354,6 +369,7 @@ export default function ScanScreen({ active, paused, onDetected, onOpenHistory }
       <video
         ref={videoRef}
         className={`scan-video ${isLive ? "is-live" : ""} ${mirrored ? "is-mirrored" : ""}`}
+        poster={BLANK_POSTER}
         playsInline
         muted
         autoPlay
@@ -367,14 +383,6 @@ export default function ScanScreen({ active, paused, onDetected, onOpenHistory }
           <polygon key={outline.id} points={outline.points} />
         </svg>
       )}
-
-      <header className="scan-top">
-        <div className="wordmark">QR Lens</div>
-        <div className={`status-pill glass ${isLive ? "is-live" : ""}`}>
-          <i />
-          {isLive ? (settings.batch ? "Live · Batch" : "Live") : copy.eyebrow}
-        </div>
-      </header>
 
       <div className="scan-stage">
         {isLive ? (
@@ -493,3 +501,5 @@ export default function ScanScreen({ active, paused, onDetected, onOpenHistory }
     </section>
   );
 }
+
+export default memo(ScanScreen);

@@ -4,6 +4,7 @@ import {
   copyText,
   isShareCancel,
   saveBlob,
+  saveImage,
   shareBlob,
   shareText,
   timestampName,
@@ -37,6 +38,14 @@ export async function saveFile(blob, filename) {
   }
 }
 
+async function saveImageFile(blob, filename) {
+  try {
+    toast(await saveImage(blob, filename));
+  } catch {
+    fail("Could not save the image");
+  }
+}
+
 export async function shareFile(blob, filename) {
   try {
     if (await shareBlob(blob, filename)) return;
@@ -49,14 +58,14 @@ export async function shareFile(blob, filename) {
 
 export async function saveQrPng(svg, size = 1024) {
   try {
-    await saveFile(await svgToPngBlob(svg, size), timestampName("QR", "png"));
+    await saveImageFile(await svgToPngBlob(svg, size), timestampName("QR", "png"));
   } catch {
     fail("Could not render the image");
   }
 }
 
 export async function saveQrSvg(svg) {
-  await saveFile(svgToBlob(svg), timestampName("QR", "svg"));
+  await saveImageFile(svgToBlob(svg), timestampName("QR", "svg"));
 }
 
 export async function shareQrPng(svg, size = 1024) {

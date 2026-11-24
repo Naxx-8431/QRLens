@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { memo, useState } from "react";
 import Icon from "../components/Icon";
 import Sheet from "../components/Sheet";
 import { Segmented, SettingRow } from "../components/controls";
@@ -17,7 +17,7 @@ import markUrl from "../../assets/mark.svg";
 
 const ENGINE_OPTIONS = Object.entries(SEARCH_ENGINES).map(([value, e]) => ({ value, label: e.label }));
 
-export default function SettingsScreen({ active }) {
+function SettingsScreen({ active }) {
   const settings = useSettings();
   const history = useHistory();
   const [confirming, setConfirming] = useState(false);
@@ -217,3 +217,5 @@ export default function SettingsScreen({ active }) {
     </section>
   );
 }
+
+export default memo(SettingsScreen);

@@ -1,4 +1,4 @@
-import { useDeferredValue, useMemo, useState } from "react";
+import { memo, useDeferredValue, useMemo, useState } from "react";
 import Icon from "../components/Icon";
 import { Glyph, Segmented } from "../components/controls";
 import { parseContent } from "../lib/parse";
@@ -20,7 +20,7 @@ const EMPTY_COPY = {
   search: ["No match", "Nothing in your history matches that search."],
 };
 
-export default function HistoryScreen({ active, onOpen }) {
+function HistoryScreen({ active, onOpen }) {
   const history = useHistory();
   const [filter, setFilter] = useState("all");
   const [query, setQuery] = useState("");
@@ -138,3 +138,5 @@ export default function HistoryScreen({ active, onOpen }) {
     </section>
   );
 }
+
+export default memo(HistoryScreen);
