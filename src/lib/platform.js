@@ -1,4 +1,4 @@
-import { Capacitor } from "@capacitor/core";
+import { Capacitor, registerPlugin } from "@capacitor/core";
 
 /*
  * Everything that behaves differently in the Android app and in a browser
@@ -122,6 +122,31 @@ export async function saveBlob(blob, filename) {
     // Storage can be refused on some devices; the share sheet still lets the user keep the file.
     await shareBlob(blob, filename, "QR Lens");
     return "Opened share sheet";
+  }
+}
+
+/** Native helper (android/.../PicturesPlugin.java) that writes into Pictures/QRLens. */
+const Pictures = registerPlugin("Pictures");
+
+/**
+ * Saves an image. On Android it goes to Pictures/QRLens, so it shows up in the
+ * Gallery; in a browser it is a normal download. Returns where it went.
+ */
+export async function saveImage(blob, filename) {
+  if (!isNative) {
+    downloadInBrowser(blob, filename);
+    return "Downloaded";
+  }
+  try {
+    await Pictures.save({
+      data: await blobToBase64(blob),
+      filename,
+      mimeType: (blob.type || "image/png").split(";")[0],
+    });
+    return "Saved to Pictures/QRLens";
+  } catch {
+    // Storage refused (or permission denied on old Android): fall back to Documents / share.
+    return saveBlob(blob, filename);
   }
 }
 

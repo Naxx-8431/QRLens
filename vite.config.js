@@ -15,4 +15,8 @@ export default defineConfig({
   optimizeDeps: {
     include: ['barcode-detector/ponyfill'],
   },
+  // The decoder worker loads its engine on demand, which needs ES module output.
+  worker: {
+    format: 'es',
+  },
 })

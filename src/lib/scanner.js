@@ -1,104 +1,118 @@
 /*
- * Barcode detection.
+ * Barcode detection front end.
  *
- * Uses the browser's built-in BarcodeDetector when it exists (fast, hardware
- * backed on Android) and falls back to ZXing compiled to WebAssembly everywhere
- * else. The .wasm file is bundled with the app, so scanning works offline.
+ * Frames are grabbed as ImageBitmaps (scaled down: a QR code does not need 1080p)
+ * and decoded in a Web Worker, so the camera never blocks the interface. Where
+ * workers or ImageBitmaps are unavailable, decoding falls back to the main thread.
  */
+import { detectSource, detectThorough, warmEngine } from "./engine";
 
-const WANTED_FORMATS = [
-  "qr_code",
-  "aztec",
-  "data_matrix",
-  "pdf417",
-  "ean_13",
-  "ean_8",
-  "upc_a",
-  "upc_e",
-  "code_128",
-  "code_39",
-  "code_93",
-  "codabar",
-  "itf",
-];
+/** Longest side of a frame handed to the decoder. */
+const MAX_SIDE = 1280;
 
-let nativePromise = null;
-let wasmPromise = null;
-let nativeBroken = false;
+let worker = null;
+let workerBroken = typeof Worker === "undefined" || typeof createImageBitmap === "undefined";
+let seq = 0;
+const pending = new Map();
 
-async function loadNative() {
-  if (!("BarcodeDetector" in globalThis)) return null;
+function failWorker() {
+  workerBroken = true;
+  pending.forEach((p) => p.reject(new Error("decoder worker failed")));
+  pending.clear();
+  worker?.terminate();
+  worker = null;
+}
+
+function getWorker() {
+  if (workerBroken) return null;
+  if (worker) return worker;
   try {
-    const supported = await globalThis.BarcodeDetector.getSupportedFormats();
-    if (!supported.includes("qr_code")) return null;
-    return new globalThis.BarcodeDetector({
-      formats: WANTED_FORMATS.filter((f) => supported.includes(f)),
-    });
+    worker = new Worker(new URL("./scanner.worker.js", import.meta.url), { type: "module" });
+    worker.onmessage = (e) => {
+      const { id, codes, error } = e.data;
+      const p = pending.get(id);
+      if (!p) return;
+      pending.delete(id);
+      if (error) p.reject(new Error(error));
+      else p.resolve(codes);
+    };
+    worker.onerror = failWorker;
   } catch {
-    return null;
+    failWorker();
   }
+  return worker;
 }
 
-async function loadWasm() {
-  const [{ BarcodeDetector, prepareZXingModule }, { default: wasmUrl }] = await Promise.all([
-    import("barcode-detector/ponyfill"),
-    import("zxing-wasm/reader/zxing_reader.wasm?url"),
-  ]);
-  prepareZXingModule({
-    overrides: {
-      locateFile: (path, prefix) => (path.endsWith(".wasm") ? wasmUrl : prefix + path),
-    },
+function inWorker(bitmap, thorough) {
+  const w = getWorker();
+  if (!w) {
+    bitmap.close?.();
+    return Promise.reject(new Error("no worker"));
+  }
+  return new Promise((resolve, reject) => {
+    const id = ++seq;
+    pending.set(id, { resolve, reject });
+    w.postMessage({ id, bitmap, thorough }, [bitmap]);
   });
-  return new BarcodeDetector({ formats: WANTED_FORMATS });
 }
-
-const getNative = () => (nativePromise ??= loadNative());
-const getWasm = () => (wasmPromise ??= loadWasm());
 
 /** Start loading the engine early so the first frame is not delayed. */
 export function warmUp() {
-  getNative().then((d) => {
-    if (!d) getWasm().catch(() => {});
-  });
+  const w = getWorker();
+  if (w) w.postMessage({ warm: true });
+  else warmEngine();
 }
 
-const normalise = (codes) =>
-  codes
-    .filter((c) => c.rawValue)
-    .map((c) => ({ text: c.rawValue, format: c.format, points: c.cornerPoints || [] }));
+/** Detects codes in a playing video. Corner points are in video pixels. */
+export async function detect(video) {
+  const vw = video.videoWidth;
+  const vh = video.videoHeight;
+  if (!vw || !vh) return [];
 
-let nativeFailures = 0;
-
-/** Detects codes in a video element, canvas, ImageBitmap or Blob. */
-export async function detect(source) {
-  const native = nativeBroken ? null : await getNative();
-  if (native) {
+  if (!workerBroken) {
+    const scale = Math.min(1, MAX_SIDE / Math.max(vw, vh));
+    let bitmap;
     try {
-      const codes = await native.detect(source);
-      nativeFailures = 0;
-      return normalise(codes);
-    } catch (err) {
-      // A frame that is not ready yet is not an engine failure.
-      if (err?.name === "InvalidStateError") return [];
-      // Some devices expose the API but cannot actually run it.
-      if (++nativeFailures >= 3) nativeBroken = true;
+      bitmap = await createImageBitmap(
+        video,
+        scale < 1
+          ? { resizeWidth: Math.round(vw * scale), resizeHeight: Math.round(vh * scale), resizeQuality: "medium" }
+          : undefined
+      );
+    } catch {
+      return [];
+    }
+    try {
+      const codes = await inWorker(bitmap, false);
+      if (scale === 1) return codes;
+      return codes.map((c) => ({ ...c, points: c.points.map((p) => ({ x: p.x / scale, y: p.y / scale })) }));
+    } catch {
+      if (!workerBroken) return [];
+      // The worker died: carry on without it.
     }
   }
-  const wasm = await getWasm();
-  return normalise(await wasm.detect(source));
+  return detectSource(video);
 }
 
 /** Decodes a picked/dropped/pasted image file. Tries harder than the live loop. */
 export async function detectInFile(file) {
   const bitmap = await createImageBitmap(file);
-  try {
-    let found = await detect(bitmap);
-    if (!found.length && !nativeBroken && (await getNative())) {
-      // Second opinion: ZXing copes better with photos of screens and odd angles.
-      const wasm = await getWasm();
-      found = normalise(await wasm.detect(bitmap));
+  if (!workerBroken) {
+    try {
+      return await inWorker(bitmap, true);
+    } catch {
+      if (!workerBroken) throw new Error("Could not read that image");
+      // The bitmap went to the dead worker; decode the file here instead.
+      const again = await createImageBitmap(file);
+      try {
+        return await detectThorough(again);
+      } finally {
+        again.close?.();
+      }
     }
-    return found;
+  }
+  try {
+    return await detectThorough(bitmap);
   } finally {
     bitmap.close?.();
   }

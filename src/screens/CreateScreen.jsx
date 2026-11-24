@@ -1,4 +1,4 @@
-import { useDeferredValue, useMemo, useRef, useState } from "react";
+import { memo, useDeferredValue, useMemo, useRef, useState } from "react";
 import Icon from "../components/Icon";
 import { Field, Glyph, Segmented, Toggle } from "../components/controls";
 import { buildPayload, CREATE_TYPES, EMPTY_FORMS } from "../lib/encode";
@@ -155,7 +155,7 @@ function TypeForm({ type, form, set }) {
       return (
         <>
           {text("title", "Title", { placeholder: "Launch day", autoCapitalize: "sentences" })}
-          <div className="field-grid">
+          <div className="field-grid is-dates">
             {text("start", "Starts", { type: "datetime-local" })}
             {text("end", "Ends", { type: "datetime-local" })}
           </div>
@@ -168,7 +168,7 @@ function TypeForm({ type, form, set }) {
   }
 }
 
-export default function CreateScreen({ active }) {
+function CreateScreen({ active }) {
   const [type, setType] = useState("text");
   const [forms, setForms] = useState(EMPTY_FORMS);
   const [style, setStyle] = useState(DEFAULT_STYLE);
@@ -413,3 +413,5 @@ export default function CreateScreen({ active }) {
     </section>
   );
 }
+
+export default memo(CreateScreen);
